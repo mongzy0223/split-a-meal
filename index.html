@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>外賣分帳機 · Split-a-Meal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+:root{
+  --paper:#FAF9F4;
+  --ink:#1C1B17;
+  --ink-soft:#6E6A5E;
+  --line:#E4E1D6;
+  --yolk:#FFD500;
+  --yolk-deep:#E8B800;
+  --chili:#E5484D;
+  --herb:#1F7A47;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Noto Sans TC',-apple-system,'PingFang HK',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  font-family:var(--sans);
+  background:var(--ink);
+  color:var(--ink);
+  min-height:100vh;
+  padding:0 0 60px;
+}
+.wrap{max-width:520px;margin:0 auto;padding:0 14px}
+
+/* ---------- header ---------- */
+header{
+  background:var(--yolk);
+  border-bottom:3px solid var(--ink);
+  padding:22px 0 18px;
+  margin-bottom:18px;
+}
+header .wrap{display:flex;align-items:baseline;justify-content:space-between}
+h1{font-weight:900;font-size:1.45rem;letter-spacing:.02em}
+h1 span{font-family:var(--mono);font-weight:500;font-size:.72rem;display:block;letter-spacing:.14em;color:#5c4d00;margin-top:2px}
+.hist-btn{
+  font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.08em;
+  background:var(--ink);color:var(--yolk);border:none;border-radius:99px;
+  padding:8px 14px;cursor:pointer;
+}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--paper);
+  border-radius:14px;
+  padding:18px 16px;
+  margin-bottom:14px;
+}
+.card h2{
+  font-size:.78rem;font-weight:700;letter-spacing:.16em;
+  color:var(--ink-soft);text-transform:uppercase;
+  font-family:var(--mono);margin-bottom:12px;
+}
+
+/* ---------- inputs ---------- */
+label{font-size:.8rem;font-weight:500;color:var(--ink-soft);display:block;margin-bottom:5px}
+input{
+  width:100%;font-family:var(--mono);font-size:1.05rem;font-weight:500;
+  padding:11px 12px;border:1.5px solid var(--line);border-radius:9px;
+  background:#fff;color:var(--ink);outline:none;
+}
+input:focus{border-color:var(--ink)}
+input::placeholder{color:#BCB8AA;font-weight:400}
+.fee-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.fee-grid .full{grid-column:1/-1}
+.calc-box{
+  border:1.5px dashed var(--line);border-radius:9px;background:transparent;
+  padding:11px 12px;font-family:var(--mono);font-size:1.05rem;font-weight:700;color:var(--ink);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.calc-box small{font-family:var(--sans);font-weight:500;font-size:.72rem;color:var(--ink-soft)}
+label .hint{font-weight:400;font-size:.68rem;color:#A8A494}
+
+.item-row{display:grid;grid-template-columns:1fr 92px 34px;gap:8px;margin-bottom:8px;align-items:center}
+.item-row input.price{text-align:right}
+.del{
+  width:34px;height:44px;border:none;background:transparent;color:#C4C0B2;
+  font-size:1.25rem;cursor:pointer;line-height:1;
+}
+.del:active{color:var(--chili)}
+.add-btn{
+  width:100%;margin-top:4px;padding:12px;border:1.5px dashed var(--ink);
+  border-radius:9px;background:transparent;font-family:var(--sans);
+  font-weight:700;font-size:.9rem;cursor:pointer;color:var(--ink);
+}
+.add-btn:active{background:var(--yolk)}
+
+/* ---------- rounding toggle ---------- */
+.seg{
+  display:grid;grid-template-columns:1fr 1fr 1fr;border:2px solid var(--ink);
+  border-radius:10px;overflow:hidden;
+}
+.seg-note{font-size:.72rem;color:var(--ink-soft);margin-top:8px;text-align:center}
+.seg button{
+  padding:11px;border:none;background:#fff;font-family:var(--sans);
+  font-weight:700;font-size:.88rem;cursor:pointer;color:var(--ink);
+}
+.seg button.on{background:var(--ink);color:var(--yolk)}
+
+/* ---------- receipt ---------- */
+.receipt{
+  background:#fff;
+  margin:22px 0 14px;
+  padding:26px 18px 30px;
+  position:relative;
+  font-family:var(--mono);
+  box-shadow:0 6px 24px rgba(0,0,0,.35);
+  --notch:radial-gradient(circle at 10px 0, transparent 9px, #fff 9.5px);
+}
+.receipt::before,.receipt::after{
+  content:"";position:absolute;left:0;right:0;height:10px;
+  background:var(--notch);background-size:20px 10px;background-repeat:repeat-x;
+}
+.receipt::before{top:-9px;transform:rotate(180deg)}
+.receipt::after{bottom:-9px}
+.receipt .rtitle{
+  text-align:center;font-weight:700;font-size:.95rem;letter-spacing:.28em;margin-bottom:4px;
+}
+.receipt .rsub{text-align:center;font-size:.68rem;color:var(--ink-soft);letter-spacing:.1em;margin-bottom:14px}
+.rate-stamp{
+  margin:0 auto 16px;width:fit-content;
+  border:2.5px solid var(--ink);border-radius:8px;
+  padding:6px 14px;text-align:center;
+  transform:rotate(-2deg);
+}
+.rate-stamp b{font-size:1.3rem;letter-spacing:.04em}
+.rate-stamp small{display:block;font-size:.6rem;letter-spacing:.18em;color:var(--ink-soft)}
+.rline{
+  display:flex;justify-content:space-between;gap:10px;
+  font-size:.82rem;padding:7px 0;border-bottom:1px dashed var(--line);
+}
+.rline .nm{flex:1;word-break:break-all;font-family:var(--sans);font-weight:500}
+.rline .orig{color:#BCB8AA;text-decoration:line-through;font-size:.72rem;align-self:center}
+.rline .shr{font-weight:700;min-width:64px;text-align:right}
+.rtotals{margin-top:14px;font-size:.82rem}
+.rtotals div{display:flex;justify-content:space-between;padding:3px 0}
+.rtotals .grand{font-weight:700;font-size:1.05rem;border-top:2px solid var(--ink);margin-top:6px;padding-top:8px}
+.rtotals .diff{color:var(--chili)}
+.rtotals .save{color:var(--herb)}
+.empty-note{text-align:center;color:var(--ink-soft);font-size:.78rem;padding:10px 0;font-family:var(--sans)}
+
+/* ---------- actions ---------- */
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.btn{
+  padding:14px;border-radius:11px;border:none;cursor:pointer;
+  font-family:var(--sans);font-weight:700;font-size:.92rem;
+}
+.btn-copy{background:var(--yolk);color:var(--ink);border:2px solid var(--ink)}
+.btn-copy:active{background:var(--yolk-deep)}
+.btn-save{background:transparent;color:var(--paper);border:2px solid var(--paper)}
+.btn-save:active{background:rgba(255,255,255,.12)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.wide{grid-column:1/-1}
+
+/* ---------- image overlay ---------- */
+.img-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;gap:14px;
+}
+.img-overlay.show{display:flex}
+.img-overlay img{max-width:100%;max-height:72vh;border-radius:6px;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+.img-overlay p{color:var(--yolk);font-family:var(--mono);font-size:.78rem;text-align:center}
+.img-overlay .obtns{display:flex;gap:10px}
+.img-overlay button,.img-overlay a{
+  font-family:var(--sans);font-weight:700;font-size:.85rem;padding:11px 18px;
+  border-radius:10px;cursor:pointer;text-decoration:none;
+}
+.img-overlay a{background:var(--yolk);color:var(--ink);border:2px solid var(--yolk)}
+.img-overlay button{background:transparent;color:#fff;border:2px solid #fff}
+
+/* ---------- history ---------- */
+#historyCard{display:none}
+.hrow{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;border-bottom:1px solid var(--line);gap:8px;
+}
+.hrow .hmeta{font-size:.82rem}
+.hrow .hmeta b{font-family:var(--mono)}
+.hrow .hmeta small{display:block;color:var(--ink-soft);font-size:.7rem;margin-top:2px}
+.hrow .hbtns{display:flex;gap:6px}
+.hrow button{
+  font-size:.72rem;font-weight:700;padding:7px 10px;border-radius:7px;cursor:pointer;
+  border:1.5px solid var(--ink);background:#fff;font-family:var(--sans);
+}
+.hrow button.hdel{border-color:var(--line);color:var(--ink-soft)}
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--ink);color:var(--yolk);font-family:var(--mono);font-size:.8rem;
+  padding:11px 20px;border-radius:99px;transition:transform .25s;z-index:50;
+  border:1.5px solid var(--yolk);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>外賣分帳機<span>SPLIT-A-MEAL · PRO-RATA</span></h1>
+    <button class="hist-btn" onclick="toggleHistory()">歷史 ▾</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card" id="historyCard">
+    <h2>過往紀錄 History</h2>
+    <div id="historyList"><div class="empty-note">未有紀錄</div></div>
+  </div>
+
+  <div class="card">
+    <h2>① 費用 Fees &amp; Discount</h2>
+    <div class="fee-grid">
+      <div>
+        <label>優惠／折扣 Discount <span class="hint">−</span></label>
+        <input type="number" inputmode="decimal" id="discount" placeholder="0.00" oninput="render()">
+      </div>
+      <div>
+        <label>平台費 Platform fee <span class="hint">＋</span></label>
+        <input type="number" inputmode="decimal" id="platformFee" placeholder="0.00" oninput="render()">
+      </div>
+      <div>
+        <label>運費 Delivery fee <span class="hint">＋</span></label>
+        <input type="number" inputmode="decimal" id="deliveryFee" placeholder="0.00" oninput="render()">
+      </div>
+      <div>
+        <label>實付總計 <span class="hint">可留空，自動計</span></label>
+        <input type="number" inputmode="decimal" id="totalPaid" placeholder="自動" oninput="render()">
+      </div>
+      <div class="full">
+        <div class="calc-box"><small>小計 − 優惠 ＋ 費用 ＝ 總計</small><span id="calcTotal">$0.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② 逐項輸入 Items</h2>
+    <div id="items"></div>
+    <button class="add-btn" onclick="addItem()">＋ 加一項</button>
+  </div>
+
+  <div class="card">
+    <h2>③ 尾數處理 Rounding</h2>
+    <div class="seg">
+      <button id="rDown" class="on" onclick="setRound('down')">捨去 ↓</button>
+      <button id="rNone" onclick="setRound('none')">唔捨入 =</button>
+      <button id="rUp" onclick="setRound('up')">進位 ↑</button>
+    </div>
+    <p class="seg-note" id="segNote">每人銀碼捨去到一個位</p>
+  </div>
+
+  <div class="receipt" id="receipt">
+    <div class="rtitle">分 帳 單</div>
+    <div class="rsub" id="rDate"></div>
+    <div id="receiptBody"><div class="empty-note">輸入銀碼同項目，即刻計好 ↑</div></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-copy" id="copyBtn" onclick="copyText()" disabled>複製文字 📋</button>
+    <button class="btn btn-copy" id="imgBtn" onclick="saveImage()" disabled>儲存為圖片 🖼️</button>
+    <button class="btn btn-save wide" id="saveBtn" onclick="saveOrder()" disabled>儲存呢單入歷史 💾</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="img-overlay" id="imgOverlay">
+  <img id="receiptImg" alt="分帳單圖片">
+  <p>長按圖片即可儲存 / Long-press to save</p>
+  <div class="obtns">
+    <a id="dlLink" download="split-receipt.png">下載 ⬇︎</a>
+    <button onclick="closeOverlay()">關閉 ✕</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script>
+let items = [{name:'', price:''},{name:'', price:''},{name:'', price:''}];
+let lastResult = null;
+let roundMode = 'down';
+
+const $ = id => document.getElementById(id);
+const fmt = n => '$' + n.toFixed(2);
+const num = id => { const v = parseFloat($(id).value); return isNaN(v) ? 0 : v; };
+const roundShare = n => roundMode === 'down' ? Math.floor(n*10 + 1e-9)/10
+  : roundMode === 'up' ? Math.ceil(n*10 - 1e-9)/10
+  : Math.round(n*100)/100;
+const fmt1 = n => roundMode === 'none' ? '$' + n.toFixed(2) : '$' + n.toFixed(1);
+
+const segNotes = {
+  down: '每人銀碼捨去到一個位',
+  none: '唔捨入，每人畀足準確金額（兩個位）',
+  up:   '每人銀碼進位到一個位'
+};
+function setRound(m){
+  roundMode = m;
+  $('rDown').classList.toggle('on', m==='down');
+  $('rNone').classList.toggle('on', m==='none');
+  $('rUp').classList.toggle('on', m==='up');
+  $('segNote').textContent = segNotes[m];
+  render();
+}
+
+function addItem(){ items.push({name:'', price:''}); drawItems(); }
+function removeItem(i){ items.splice(i,1); if(!items.length) items.push({name:'',price:''}); drawItems(); render(); }
+function updateItem(i, field, v){ items[i][field] = v; render(); }
+
+function drawItems(){
+  $('items').innerHTML = items.map((it,i)=>`
+    <div class="item-row">
+      <input type="text" placeholder="項目／人名" value="${esc(it.name)}"
+        oninput="updateItem(${i},'name',this.value)">
+      <input type="number" inputmode="decimal" class="price" placeholder="0.00" value="${esc(it.price)}"
+        oninput="updateItem(${i},'price',this.value)">
+      <button class="del" onclick="removeItem(${i})" aria-label="刪除">×</button>
+    </div>`).join('');
+}
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function render(){
+  const valid = items.filter(it => parseFloat(it.price) > 0);
+  const subtotal = valid.reduce((s,it)=>s+parseFloat(it.price),0);
+  const discount = num('discount');
+  const platform = num('platformFee');
+  const delivery = num('deliveryFee');
+  const autoTotal = subtotal - discount + platform + delivery;
+  const override = parseFloat($('totalPaid').value);
+  const total = (!isNaN(override) && override > 0) ? override : autoTotal;
+
+  $('calcTotal').textContent = fmt(Math.max(autoTotal,0));
+  $('totalPaid').placeholder = autoTotal > 0 ? autoTotal.toFixed(2) : '自動';
+  $('rDate').textContent = new Date().toLocaleDateString('zh-HK',{year:'numeric',month:'long',day:'numeric'});
+
+  const body = $('receiptBody');
+  if(!(subtotal>0) || !(total>0)){
+    body.innerHTML = '<div class="empty-note">輸入銀碼同項目，即刻計好 ↑</div>';
+    $('copyBtn').disabled = $('saveBtn').disabled = $('imgBtn').disabled = true;
+    lastResult = null; return;
+  }
+
+  const rate = total/subtotal;
+  const rows = valid.map((it,i)=>({
+    name: it.name.trim() || ('項目 '+(i+1)),
+    price: parseFloat(it.price),
+    share: roundShare(parseFloat(it.price)*rate)
+  }));
+  const collected = rows.reduce((s,r)=>s+r.share,0);
+  const diff = total - collected; // >0: payer absorbs; <0: payer gains
+
+  body.innerHTML = `
+    <div class="rate-stamp"><b>${(rate*100).toFixed(2)}%</b><small>RATE = ${total.toFixed(2)} ÷ ${subtotal.toFixed(2)}</small></div>
+    ${rows.map(r=>`
+      <div class="rline">
+        <span class="nm">${esc(r.name)}</span>
+        <span class="orig">${fmt(r.price)}</span>
+        <span class="shr">${fmt1(r.share)}</span>
+      </div>`).join('')}
+    <div class="rtotals">
+      <div><span>小計</span><span>${fmt(subtotal)}</span></div>
+      ${discount ? `<div class="save"><span>優惠／折扣</span><span>−${fmt(discount)}</span></div>` : ''}
+      ${platform ? `<div><span>平台費</span><span>＋${fmt(platform)}</span></div>` : ''}
+      ${delivery ? `<div><span>運費</span><span>＋${fmt(delivery)}</span></div>` : ''}
+      <div><span>實付總計</span><span>${fmt(total)}</span></div>
+      <div><span>合共收回（${roundMode==='down'?'捨去↓':roundMode==='up'?'進位↑':'唔捨入'}）</span><span>${fmt(collected)}</span></div>
+      <div class="grand"><span>每人 = 銀碼 × ${(rate*100).toFixed(2)}%</span><span>${roundMode==='down'?'↓1位':roundMode==='up'?'↑1位':'足額'}</span></div>
+    </div>`;
+  $('copyBtn').disabled = $('saveBtn').disabled = $('imgBtn').disabled = false;
+  lastResult = {date:new Date().toISOString(), total, subtotal, discount, platform, delivery, rate, rows, collected, diff, roundMode};
+}
+
+function copyText(){
+  if(!lastResult) return;
+  const r = lastResult;
+  const d = new Date().toLocaleDateString('zh-HK',{month:'numeric',day:'numeric'});
+  let t = `🧾 外賣分帳 ${d}\n比例 = ${r.total.toFixed(2)} ÷ ${r.subtotal.toFixed(2)} = ${(r.rate*100).toFixed(2)}%\n（已攤分優惠${r.discount?fmt(r.discount):'$0'} / 平台費${fmt(r.platform)} / 運費${fmt(r.delivery)}）\n\n`;
+  t += r.rows.map(x=>`• ${x.name}：${fmt1(x.share)}`).join('\n');
+  t += `\n\n合共 ${fmt(r.collected)}`;
+  navigator.clipboard.writeText(t).then(()=>toast('已複製，貼落群組啦 ✅'))
+    .catch(()=>{ prompt('手動複製：', t); });
+}
+
+/* ---------- persistent history ---------- */
+async function loadHistory(){
+  try{
+    const res = await window.storage.get('split-history');
+    return res ? JSON.parse(res.value) : [];
+  }catch(e){ return []; }
+}
+async function saveOrder(){
+  if(!lastResult) return;
+  try{
+    const hist = await loadHistory();
+    hist.unshift(lastResult);
+    if(hist.length>30) hist.length = 30;
+    await window.storage.set('split-history', JSON.stringify(hist));
+    toast('已儲存 💾');
+    drawHistory(hist);
+  }catch(e){ toast('儲存失敗，再試一次'); }
+}
+async function toggleHistory(){
+  const c = $('historyCard');
+  const showing = c.style.display === 'block';
+  if(showing){ c.style.display='none'; return; }
+  c.style.display='block';
+  drawHistory(await loadHistory());
+  window.scrollTo({top:0});
+}
+function drawHistory(hist){
+  const el = $('historyList');
+  if(!hist.length){ el.innerHTML = '<div class="empty-note">未有紀錄</div>'; return; }
+  el.innerHTML = hist.map((h,i)=>{
+    const d = new Date(h.date).toLocaleDateString('zh-HK',{month:'numeric',day:'numeric'});
+    return `<div class="hrow">
+      <div class="hmeta"><b>${fmt(h.total)}</b> · ${h.rows.length} 項<small>${d} · 比例 ${(h.rate*100).toFixed(1)}%</small></div>
+      <div class="hbtns">
+        <button onclick="restoreOrder(${i})">開返</button>
+        <button class="hdel" onclick="deleteOrder(${i})">刪除</button>
+      </div></div>`;
+  }).join('');
+}
+async function restoreOrder(i){
+  const hist = await loadHistory();
+  const h = hist[i]; if(!h) return;
+  $('discount').value = h.discount || '';
+  $('platformFee').value = h.platform || '';
+  $('deliveryFee').value = h.delivery || '';
+  $('totalPaid').value = '';
+  if (h.roundMode) setRound(h.roundMode);
+  items = h.rows.map(r=>({name:r.name, price:String(r.price)}));
+  drawItems(); render(); toast('已載入');
+}
+async function deleteOrder(i){
+  const hist = await loadHistory();
+  hist.splice(i,1);
+  try{ await window.storage.set('split-history', JSON.stringify(hist)); }catch(e){}
+  drawHistory(hist);
+}
+
+async function saveImage(){
+  if(!lastResult) return;
+  toast('整緊圖片…');
+  try{
+    const canvas = await html2canvas($('receipt'), {
+      backgroundColor:'#ffffff', scale:2, useCORS:true,
+      onclone: doc => {
+        const r = doc.getElementById('receipt');
+        r.style.margin='0'; r.style.boxShadow='none';
+      }
+    });
+    const url = canvas.toDataURL('image/png');
+    const d = new Date().toISOString().slice(0,10);
+    $('receiptImg').src = url;
+    $('dlLink').href = url;
+    $('dlLink').download = `split-${d}.png`;
+    $('imgOverlay').classList.add('show');
+  }catch(e){ toast('整唔到圖片，再試一次'); }
+}
+function closeOverlay(){ $('imgOverlay').classList.remove('show'); }
+
+let toastTimer;
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+drawItems(); render();
+</script>
+</body>
+</html>
